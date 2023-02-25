@@ -57,7 +57,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker meta
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' }}
         id: meta
         uses: docker/metadata-action@v4
         with:
@@ -67,12 +66,12 @@ jobs:
             type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
 
       - name: Build and push
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' }}
         uses: docker/build-push-action@v4
         with:
           context: .
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          push: true
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' }}
           build-args: COREDNS_REF=${{ inputs.coredns_ref || env.COREDNS_REF }}
 
