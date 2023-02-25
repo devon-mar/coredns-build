@@ -1,0 +1,78 @@
+---
+name: build
+
+"on":
+  push:
+    branches:
+      - master
+      - devel
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+    inputs:
+      coredns_ref:
+        description: CoreDNS ref
+        required: true
+
+env:
+  COREDNS_REF: v1.10.1
+  TEST_TAG: corednstest
+  TEST_CONTAINER_NAME: corednstest
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build and export to Docker
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          load: true
+          tags: ${{ env.TEST_TAG }}
+          build-args: COREDNS_REF=${{ inputs.coredns_ref || env.COREDNS_REF }}
+
+      - name: Test
+        run: |
+          docker run -d --name ${{ env.TEST_CONTAINER_NAME }} -p 5353:53/udp -p 8080:8080 -v $(pwd)/Corefile:/Corefile ${{ env.TEST_TAG }}
+          ./test.sh
+
+      - name: Show container logs
+        if: ${{ always() }}
+        run: docker logs ${{ env.TEST_CONTAINER_NAME }}
+
+      - name: Login to GitHub Container Registry
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' }}
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' }}
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ inputs.coredns_ref || env.COREDNS_REF }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+
+      - name: Build and push
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' }}
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          build-args: COREDNS_REF=${{ inputs.coredns_ref || env.COREDNS_REF }}
+

@@ -1,0 +1,9 @@
+.:53 {
+    temptxt {
+        txt _acme-challenge.test1.example.com user1
+        listen :8080
+    }
+    records example.com {
+        @       300     IN      A     192.0.2.1
+    }
+}
