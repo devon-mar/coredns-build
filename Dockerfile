@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.21.5 as builder
+FROM --platform=$BUILDPLATFORM golang:1.21.6 as builder
 
 ARG COREDNS_REF
 WORKDIR /usr/src/app
