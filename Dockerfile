@@ -7,7 +7,7 @@ RUN git clone https://github.com/coredns/coredns.git /usr/src/app &&\
 
 COPY extra-plugins.cfg .
 RUN cat plugin.cfg extra-plugins.cfg > plugin.cfg
-RUN SYSTEM="GOOS=$TARGETOS GOARCH=$TARGETARCH" make
+RUN make SYSTEM="GOOS=$TARGETOS GOARCH=$TARGETARCH"
 
 
 FROM --platform=$TARGETPLATFORM scratch
