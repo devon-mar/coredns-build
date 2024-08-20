@@ -1,4 +1,5 @@
 FROM --platform=$BUILDPLATFORM golang:1.23 as builder
+ARG TARGETOS TARGETARCH
 
 ARG COREDNS_REF
 WORKDIR /usr/src/app
@@ -7,7 +8,7 @@ RUN git clone https://github.com/coredns/coredns.git /usr/src/app &&\
 
 COPY extra-plugins.cfg .
 RUN cat plugin.cfg extra-plugins.cfg > plugin.cfg
-RUN make SYSTEM="GOOS=$$TARGETOS GOARCH=$$TARGETARCH"
+RUN make SYSTEM="GOOS=$TARGETOS GOARCH=$TARGETARCH"
 
 
 FROM --platform=$TARGETPLATFORM scratch
